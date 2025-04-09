@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Countdown Widget</title>
+    <style>
+        :root {
+            --bg-color: #191919;
+            --text-color: #C19138;
+            --expired-color: #eb5757;
+        }
+        
+        body {
+            margin: 0;
+            padding: 12px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'SF Mono', 'Roboto Mono', monospace;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100%;
+            box-sizing: border-box;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        .countdown-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .countdown-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+        
+        .countdown-timer {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+        }
+        
+        .time-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .time-value {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1;
+        }
+        
+        .time-label {
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        
+        .expired {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--expired-color);
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 10px;
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        
+        .theme-toggle:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="countdown-container">
+        <div class="countdown-title" id="title">COUNTDOWN</div>
+        <div class="countdown-timer" id="timer">
+            <div class="time-unit">
+                <span class="time-value">--</span>
+                <span class="time-label">Days</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value">--</span>
+                <span class="time-label">Hours</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value">--</span>
+                <span class="time-label">Minutes</span>
+            </div>
+        </div>
+    </div>
+    <div class="theme-toggle" id="themeToggle">🌓</div>
+
+    <script>
+        // Theme settings with Notion's exact colors
+        const themes = {
+            dark: {
+                bg: '#191919',
+                text: '#C19138',
+                expired: '#eb5757'
+            },
+            light: {
+                bg: '#FFFFFF',
+                text: '#C29343', // Notion's light mode gold
+                expired: '#d1453b' // Slightly brighter red for light mode
+            }
+        };
+        
+        // Current state
+        let currentTheme = 'dark';
+        let manualOverride = false;
+        
+        // Apply theme with smooth transition
+        function applyTheme(theme) {
+            currentTheme = theme;
+            document.documentElement.style.setProperty('--bg-color', themes[theme].bg);
+            document.documentElement.style.setProperty('--text-color', themes[theme].text);
+            document.documentElement.style.setProperty('--expired-color', themes[theme].expired);
+        }
+        
+        // Improved theme detection
+        function detectNotionTheme() {
+            if (manualOverride) return;
+            
+            // Method 1: Check for Notion's theme attribute
+            try {
+                const notionApp = window.parent.document.querySelector('notion-app');
+                if (notionApp) {
+                    const theme = notionApp.getAttribute('theme') || 'dark';
+                    applyTheme(theme);
+                    return;
+                }
+            } catch (e) {}
+            
+            // Method 2: Check system preference
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(systemDark ? 'dark' : 'light');
+        }
+        
+        // Manual theme toggle
+        document.getElementById('themeToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            manualOverride = true;
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+        
+        // Format time unit for display
+        function formatTimeUnit(value, label) {
+            return `
+                <div class="time-unit">
+                    <span class="time-value">${value.toString().padStart(2, '0')}</span>
+                    <span class="time-label">${label}</span>
+                </div>
+            `;
+        }
+
+        // Countdown logic
+        function updateCountdown() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetDate = urlParams.get('date');
+            const title = urlParams.get('title') || 'COUNTDOWN';
+            
+            document.getElementById('title').textContent = title.toUpperCase();
+
+            if (!targetDate) {
+                document.getElementById('timer').innerHTML = '<div style="font-size:12px;opacity:0.7;">No target date specified</div>';
+                return;
+            }
+
+            const now = new Date();
+            const target = new Date(targetDate);
+            const distance = target - now;
+            
+            if (distance < 0) {
+                document.getElementById('timer').innerHTML = '<div class="expired">EXPIRED</div>';
+                return;
+            }
+            
+            // Calculate all time units
+            const totalDays = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            
+            // Build display HTML
+            let timeHTML = '';
+            
+            if (totalDays > 30) {
+                const months = Math.floor(totalDays / 30);
+                const remainingDays = totalDays % 30;
+                
+                timeHTML += formatTimeUnit(months, 'Months');
+                timeHTML += formatTimeUnit(remainingDays, 'Days');
+            } else {
+                timeHTML += formatTimeUnit(totalDays, 'Days');
+            }
+            
+            timeHTML += formatTimeUnit(hours, 'Hours');
+            timeHTML += formatTimeUnit(minutes, 'Minutes');
+            
+            document.getElementById('timer').innerHTML = timeHTML;
+            
+            // Calculate ms until next minute change
+            const secondsUntilNextMinute = 60 - now.getSeconds();
+            setTimeout(updateCountdown, secondsUntilNextMinute * 1000);
+        }
+
+        // Initial setup
+        detectNotionTheme();
+        updateCountdown();
+        
+        // Watch for theme changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(() => {
+                manualOverride = false;
+                detectNotionTheme();
+            });
+        }
+        
+        // Continuous theme checking in Notion
+        setInterval(() => {
+            if (!manualOverride) {
+                detectNotionTheme();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
