@@ -25,3 +25,22 @@ Two elegant, theme-aware widgets for Notion that automatically adapt to light/da
    ```markdown
    [Countdown](https://yoururl.com/countdown.html?date=2024-12-31T23:59&title=New%20Year)
    [Clock](https://yoururl.com/clock.html)
+Use Notion's /embed block and paste the URL
+
+🎯 Widget Usage
+⏳ Countdown Timer
+URL Parameters:
+
+Parameter	Example	Description
+date	2024-12-31T23:59	Target date/time (ISO format)
+title	Project%20Deadline	Custom title (URL-encoded)
+Example:
+countdown.html?date=2024-06-15T17:00&title=Release%20Date
+
+🕒 Live Clock
+URL Parameters:
+
+Parameter	Example	Description
+format	12	Optional: 12 or 24 hour format
+Example:
+clock.html?format=12
