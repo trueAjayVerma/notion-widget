@@ -35,3 +35,4 @@
    - Any static hosting
 
 2. Embed in Notion:
+/embed → Paste URL
