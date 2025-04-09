@@ -1,7 +1,5 @@
 # Notion Enhanced Widgets
 
-![Widget Preview](https://i.imgur.com/JQZ4h7E.png) *(example screenshot placeholder)*
-
 ## Features ✨
 
 - **Auto-Theming**: Perfectly matches Notion's light/dark mode
